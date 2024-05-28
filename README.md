@@ -17,7 +17,8 @@ BIZ UDゴシックの目に優しく馴染む字形と Inconsolata の模範的�
 以下の特徴を備えています。
 
 - モリサワ社の考えるユニバーサルデザインが盛り込まれたBIZ UDゴシック由来の読み易い日本語文字
-- Ricty でも合成元として用いられている人気の Inconsolata 由来のラテン文字
+- [Ricty](https://rictyfonts.github.io/) でも合成元として用いられている Inconsolata 由来の綺麗なラテン文字
+- 半角1:全角2 幅の等幅フォント
 - BIZ UDゴシック相当の IVS (異体字シーケンス) に対応
 - コーディング中に気付きづらい全角スペースの可視化
 - 判読性向上のための細かな修正
@@ -27,7 +28,7 @@ BIZ UDゴシックの目に優しく馴染む字形と Inconsolata の模範的�
 
 ## 表示サンプル
 
-TODO image
+![image](https://github.com/yuru7/bizin-gothic/assets/13458509/b7ea0598-8bc9-4a1f-8774-221a47f6a2a3)
 
 ## ビルド
 
