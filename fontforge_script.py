@@ -589,6 +589,10 @@ def edit_meta_data(font, weight: str, variant: str, cap_height: int, x_height: i
     font.os2_xheight = x_height
     font.os2_capheight = cap_height
 
+    # VSCode のターミナル上のボトム位置の表示で g, j などが見切れる問題への対処
+    # 水平ベーステーブルを削除
+    font.horizontalBaseline = None
+
     if weight == "Regular":
         font.os2_weight = 400
     elif weight == "Bold":
