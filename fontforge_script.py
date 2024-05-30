@@ -8,6 +8,7 @@ import shutil
 import sys
 import uuid
 from decimal import ROUND_HALF_UP, Decimal
+from math import radians
 
 import fontforge
 import psMat
@@ -25,6 +26,7 @@ BUILD_FONTS_DIR = settings.get("DEFAULT", "BUILD_FONTS_DIR")
 VENDER_NAME = settings.get("DEFAULT", "VENDER_NAME")
 FONTFORGE_PREFIX = settings.get("DEFAULT", "FONTFORGE_PREFIX")
 IDEOGRAPHIC_SPACE = settings.get("DEFAULT", "IDEOGRAPHIC_SPACE")
+DISCORD_STR = settings.get("DEFAULT", "DISCORD_STR")
 WIDTH_35_STR = settings.get("DEFAULT", "WIDTH_35_STR")
 INVISIBLE_ZENKAKU_SPACE_STR = settings.get("DEFAULT", "INVISIBLE_ZENKAKU_SPACE_STR")
 JPDOC_STR = settings.get("DEFAULT", "JPDOC_STR")
@@ -109,6 +111,10 @@ def get_options():
             options["console"] = True
         elif arg == "--nerd-font":
             options["nerd-font"] = True
+        elif arg == "--discord":
+            options["discord"] = True
+        elif arg.startswith("--discord-ignore="):
+            options["discord-ignore-char-list"] = arg.split("=")[1]
         else:
             options["unknown-option"] = True
             return
@@ -129,6 +135,10 @@ def generate_font(jp_style, eng_style, merged_style):
 
     # いくつかのグリフ形状に調整を加える
     adjust_some_glyph(jp_font, eng_font, eng_style)
+
+    # Discord用の調整
+    if options.get("discord"):
+        create_discord(eng_font)
 
     # 重複するグリフを削除する
     delete_duplicate_glyphs(jp_font, eng_font)
@@ -153,12 +163,14 @@ def generate_font(jp_style, eng_style, merged_style):
         add_nerd_font_glyphs(jp_font, eng_font)
 
     # オプション毎の修飾子を追加する
-    variant = WIDTH_35_STR if options.get("35") else ""
+    variant = f"{DISCORD_STR} " if options.get("discord") else ""
+    variant += WIDTH_35_STR if options.get("35") else ""
     variant += (
         INVISIBLE_ZENKAKU_SPACE_STR if options.get("invisible-zenkaku-space") else ""
     )
     variant += JPDOC_STR if options.get("jpdoc") else ""
     variant += NERD_FONTS_STR if options.get("nerd-font") else ""
+    variant = variant.strip()
 
     # macOSでのpostテーブルの使用性エラー対策
     # 重複するグリフ名を持つグリフをリネームする
@@ -286,26 +298,175 @@ def adjust_some_glyph(jp_font, eng_font, eng_style):
             continue
     jp_font.selection.none()
 
-    def adjust_scale(glyph, scale_x, scale_y):
-        """グリフのスケールを調整する"""
-        original_width = glyph.width
-        glyph.transform(psMat.scale(scale_x, scale_y))
-        glyph.transform(psMat.translate((original_width - glyph.width) / 2, 0))
-        glyph.width = original_width
-
-    # シングルクォート、ダブルクォート、バッククォートを大きくする
-    for glyph_name in [0x0027, 0x0022, 0x0060]:
+    # シングルクォート、ダブルクォートを大きくする
+    for glyph_name in [0x0027, 0x0022]:
         glyph = eng_font[glyph_name]
-        adjust_scale(glyph, 1.2, 1.1)
+        scale_glyph(glyph, 1.1, 1)
     # コロン、セミコロン、カンマ、ドットを大きくする
     for glyph_name in [0x003A, 0x003B, 0x002C, 0x002E]:
         glyph = eng_font[glyph_name]
-        adjust_scale(glyph, 1.1, 1.1)
+        scale_glyph(glyph, 1.1, 1.1)
+    # バッククォートを大きくする
+    for glyph_name in [0x0060]:
+        glyph = eng_font[glyph_name]
+        rotate_glyph(glyph, -32)
+        scale_glyph(glyph, 1.1, 1.25)
+        rotate_glyph(glyph, 37)
+    # ハイフンを広げる
+    hyphen = eng_font[0x002D]
+    scale_glyph(hyphen, 1.2, 1)
+    # プラスを大きくする
+    for glyph_name in [0x002B]:
+        glyph = eng_font[glyph_name]
+        scale_glyph(glyph, 1, 1.15)
     # チルダを調整
     tilde = eng_font[0x007E]
     tilde.clear()
     eng_font.mergeFonts(f"{SOURCE_FONTS_DIR}/inconsolata/custom_glyphs-{eng_style}.sfd")
     eng_font.selection.none()
+
+
+def scale_glyph(glyph, scale_x, scale_y):
+    """グリフのスケールを調整する"""
+    original_width = glyph.width
+    before_bb = glyph.boundingBox()
+    # スケール変換
+    glyph.transform(psMat.scale(scale_x, scale_y))
+    after_bb = glyph.boundingBox()
+    # 拡大で増えた分を考慮して中心位置を調整
+    glyph.transform(
+        psMat.translate(
+            (before_bb[2] - after_bb[2]) / 2, (before_bb[3] - after_bb[3]) / 2
+        )
+    )
+    glyph.width = original_width
+
+
+def rotate_glyph(glyph, degree):
+    """グリフを回転する"""
+    # 原点が中央になるように寄せる
+    bb = glyph.boundingBox()
+    center_x = (bb[0] + bb[2]) / 2
+    center_y = (bb[1] + bb[3]) / 2
+    to_origin = psMat.translate(-center_x, -center_y)
+    # 回転して戻す
+    translate_compose = psMat.compose(
+        to_origin,
+        psMat.compose(psMat.rotate(radians(degree)), psMat.inverse(to_origin)),
+    )
+    glyph.transform(translate_compose)
+
+
+def create_discord(eng_font):
+    """Discord用の調整を行う"""
+    # Discord用の調整
+    discord_char_list = "07DZlrz|"
+    if options.get("discord-ignore-char-list"):
+        for char in options.get("discord-ignore-char-list"):
+            discord_char_list = discord_char_list.replace(char, "")
+
+    if "0" in discord_char_list:
+        eng_font.selection.select("zero.zero")
+        eng_font.copy()
+        eng_font.selection.select("zero")
+        eng_font.paste()
+    if "7" in discord_char_list:
+        # macron を一時的に退避して編集をかける
+        eng_font.selection.select("U+00AF")
+        eng_font.copy()
+        eng_font.selection.select("U+FFFF")
+        eng_font.paste()
+        for glyph in eng_font.selection.byGlyphs:
+            glyph.transform(psMat.translate(55, -550), ("round",))
+        eng_font.copy()
+        # 7 に編集をかける
+        eng_font.selection.select("7")
+        eng_font.pasteInto()
+        for glyph in eng_font.selection.byGlyphs:
+            glyph.removeOverlap()
+        eng_font.selection.select("U+FFFF")
+        eng_font.clear()
+    if "D" in discord_char_list:
+        eng_font.selection.select("U+00D0")
+        eng_font.copy()
+        eng_font.selection.select("D")
+        eng_font.paste()
+    if "Z" in discord_char_list:
+        # macron を一時的に退避して編集をかける
+        eng_font.selection.select("U+00AF")
+        eng_font.copy()
+        eng_font.selection.select("U+FFFF")
+        eng_font.paste()
+        for glyph in eng_font.selection.byGlyphs:
+            rotate_glyph(glyph, -31)
+            # 移動
+            glyph.transform(psMat.translate(20, -560))
+        eng_font.copy()
+        # Z に編集をかける
+        eng_font.selection.select("Z")
+        eng_font.pasteInto()
+        for glyph in eng_font.selection.byGlyphs:
+            glyph.removeOverlap()
+        eng_font.selection.select("U+FFFF")
+        eng_font.clear()
+    if "l" in discord_char_list:
+        eng_font.selection.select("l")
+        eng_font.copy()
+        for glyph in eng_font.selection.byGlyphs:
+            rotate_glyph(glyph, 180)
+        eng_font.pasteInto()
+        for glyph in eng_font.selection.byGlyphs:
+            glyph.intersect()
+    if "r" in discord_char_list:
+        eng_font.selection.select("r.serif")
+        eng_font.copy()
+        eng_font.selection.select("r")
+        eng_font.paste()
+    if "z" in discord_char_list:
+        # macron を一時的に退避して編集をかける
+        eng_font.selection.select("U+00AF")
+        eng_font.copy()
+        eng_font.selection.select("U+FFFF")
+        eng_font.paste()
+        for glyph in eng_font.selection.byGlyphs:
+            rotate_glyph(glyph, -37)
+            # 移動
+            glyph.transform(psMat.translate(0, -745))
+        eng_font.copy()
+        # z に編集をかける
+        eng_font.selection.select("z")
+        eng_font.pasteInto()
+        for glyph in eng_font.selection.byGlyphs:
+            glyph.removeOverlap()
+        eng_font.selection.select("U+FFFF")
+        eng_font.clear()
+    if "|" in discord_char_list:
+        eng_font.selection.select("U+00A6")
+        eng_font.copy()
+        eng_font.selection.select("U+007C")
+        eng_font.paste()
+
+    eng_font.selection.none()
+
+    # シングルクォート、ダブルクォートをさらに大きくする
+    for glyph_name in [0x0027, 0x0022]:
+        glyph = eng_font[glyph_name]
+        scale_glyph(glyph, 1.1, 1.1)
+    # セミコロン、コロン、カンマ、ドットをさらに大きくする
+    for glyph_name in [0x003A, 0x003B, 0x002C, 0x002E]:
+        glyph = eng_font[glyph_name]
+        scale_glyph(glyph, 1.1, 1.1)
+    # バッククォートをさらに大きくする
+    for glyph_name in [0x0060]:
+        glyph = eng_font[glyph_name]
+        rotate_glyph(glyph, -37)
+        scale_glyph(glyph, 1, 1.3)
+        rotate_glyph(glyph, 37)
+        glyph.transform(psMat.translate(0, -80))
+    # ハット、アスタリスクを大きくする
+    for glyph_name in [0x005E, 0x002A]:
+        glyph = eng_font[glyph_name]
+        scale_glyph(glyph, 1.15, 1.15)
 
 
 def adjust_em(font):
