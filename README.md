@@ -31,7 +31,9 @@ BIZ UDゴシックの目に優しく馴染む字形と Inconsolata の癖がな�
 
 ## 表示サンプル
 
-![image](https://github.com/yuru7/bizin-gothic/assets/13458509/b7ea0598-8bc9-4a1f-8774-221a47f6a2a3)
+| 通常版 | Discord |
+| :---: | :---: |
+| ![image](https://github.com/yuru7/bizin-gothic/assets/13458509/eaa7d3c6-7cee-4d12-920a-77cd72a40c42) | ![image](https://github.com/yuru7/bizin-gothic/assets/13458509/66403c9c-8cec-4fd4-baf9-f6b4679b6636) |
 
 ## ビルド
 
