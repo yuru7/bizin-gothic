@@ -134,7 +134,7 @@ def generate_font(jp_style, eng_style, merged_style):
         remove_jpdoc_symbols(eng_font)
 
     # いくつかのグリフ形状に調整を加える
-    adjust_some_glyph(jp_font, eng_font, eng_style)
+    adjust_some_glyph(jp_font, jp_style, eng_font, eng_style)
 
     # Discord用の調整
     if options.get("discord"):
@@ -274,7 +274,7 @@ def altuni_to_entity(jp_font):
     return reopen_jp_font
 
 
-def adjust_some_glyph(jp_font, eng_font, eng_style):
+def adjust_some_glyph(jp_font, jp_style, eng_font, eng_style):
     """いくつかのグリフ形状に調整を加える"""
     # 全角括弧の開きを広くする
     full_width = jp_font[0x3042].width
@@ -328,6 +328,36 @@ def adjust_some_glyph(jp_font, eng_font, eng_style):
     tilde.clear()
     eng_font.mergeFonts(f"{SOURCE_FONTS_DIR}/inconsolata/custom_glyphs-{eng_style}.sfd")
     eng_font.selection.none()
+    # 日本語フォントにカスタムグリフを適用する
+    # - ぱぴぷぺぽ パピプペポ の半濁点を調整 30%拡大
+    for uni in [
+        0x3071,
+        0x3074,
+        0x3077,
+        0x307A,
+        0x307D,
+        0x30D1,
+        0x30D4,
+        0x30D7,
+        0x30DA,
+        0x30DD,
+    ]:
+        glyph = jp_font[uni]
+        glyph.clear()
+    # - カ力 エ工 ロ口 ー一 ニ二 (カタカナ・漢字) へヘ (ひらがな・カタカナ) 後者のグリフに特徴付け
+    for uni in [
+        0x529B,
+        0x5DE5,
+        0x53E3,
+        0x30FC,
+        0x4E00,
+        0x4E8C,
+        0x30D8,
+        0x30D9,
+    ]:
+        glyph = jp_font[uni]
+        glyph.clear()
+    jp_font.mergeFonts(f"{SOURCE_FONTS_DIR}/biz-ud-gothic/custom_glyphs-{jp_style}.sfd")
 
 
 def scale_glyph(glyph, scale_x, scale_y):
