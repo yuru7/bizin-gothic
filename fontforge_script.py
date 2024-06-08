@@ -319,7 +319,11 @@ def adjust_some_glyph(jp_font, eng_font, eng_style):
     for glyph_name in [0x002B]:
         glyph = eng_font[glyph_name]
         scale_glyph(glyph, 1, 1.15)
-    # チルダを調整
+    # 全角チルダを垂直に反転
+    tilde = jp_font[0x301C]
+    inverse_glyph(tilde)
+    # 英語フォントにカスタムグリフを適用する
+    # - チルダを調整
     tilde = eng_font[0x007E]
     tilde.clear()
     eng_font.mergeFonts(f"{SOURCE_FONTS_DIR}/inconsolata/custom_glyphs-{eng_style}.sfd")
@@ -355,6 +359,16 @@ def rotate_glyph(glyph, degree):
         psMat.compose(psMat.rotate(radians(degree)), psMat.inverse(to_origin)),
     )
     glyph.transform(translate_compose)
+
+
+def inverse_glyph(glyph):
+    """グリフを反転する"""
+    before_bb = glyph.boundingBox()
+    before_top_y = before_bb[1]
+    glyph.transform(psMat.scale(1, -1))
+    after_bb = glyph.boundingBox()
+    after_top_y = after_bb[1]
+    glyph.transform(psMat.translate(0, before_top_y - after_top_y))
 
 
 def create_discord(eng_font):
