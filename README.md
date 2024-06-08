@@ -4,7 +4,7 @@ Bizin Gothic (ビジン ゴシック) は、ユニバーサルデザインフォ
 
 BIZ UDゴシックの目に優しく馴染む字形と Inconsolata の癖がなく美しい字形を違和感無く組み合わせることを目指しています。
 
-また本フォントにおける判読性を上げるための各種文字調整の仕様は、[Ricty](https://rictyfonts.github.io/) を強く意識して製作しています。
+また本フォントにおける判読性を上げるための各種文字調整の仕様は、[Ricty](https://rictyfonts.github.io/) を意識して製作しています。
 
 [👉 ダウンロード](https://github.com/yuru7/bizin-gothic/releases/latest)  
 ※「Assets」内の zip ファイルをダウンロードしてご利用ください。
