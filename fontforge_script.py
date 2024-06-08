@@ -138,7 +138,7 @@ def generate_font(jp_style, eng_style, merged_style):
 
     # Discord用の調整
     if options.get("discord"):
-        create_discord(eng_font)
+        create_discord(eng_font, jp_font, jp_style)
 
     # 重複するグリフを削除する
     delete_duplicate_glyphs(jp_font, eng_font)
@@ -319,7 +319,7 @@ def adjust_some_glyph(jp_font, jp_style, eng_font, eng_style):
     for glyph_name in [0x002B]:
         glyph = eng_font[glyph_name]
         scale_glyph(glyph, 1, 1.15)
-    # 全角チルダを垂直に反転
+    # 波ダッシュを垂直に反転
     tilde = jp_font[0x301C]
     inverse_glyph(tilde)
     # 英語フォントにカスタムグリフを適用する
@@ -329,7 +329,7 @@ def adjust_some_glyph(jp_font, jp_style, eng_font, eng_style):
     eng_font.mergeFonts(f"{SOURCE_FONTS_DIR}/inconsolata/custom_glyphs-{eng_style}.sfd")
     eng_font.selection.none()
     # 日本語フォントにカスタムグリフを適用する
-    # - ぱぴぷぺぽ パピプペポ の半濁点を調整 30%拡大
+    # - ぱぴぷぺぽ パピプペポ の半濁点を調整 20%拡大
     for uni in [
         0x3071,
         0x3074,
@@ -341,19 +341,6 @@ def adjust_some_glyph(jp_font, jp_style, eng_font, eng_style):
         0x30D7,
         0x30DA,
         0x30DD,
-    ]:
-        glyph = jp_font[uni]
-        glyph.clear()
-    # - カ力 エ工 ロ口 ー一 ニ二 (カタカナ・漢字) へヘ (ひらがな・カタカナ) 後者のグリフに特徴付け
-    for uni in [
-        0x529B,
-        0x5DE5,
-        0x53E3,
-        0x30FC,
-        0x4E00,
-        0x4E8C,
-        0x30D8,
-        0x30D9,
     ]:
         glyph = jp_font[uni]
         glyph.clear()
@@ -401,7 +388,7 @@ def inverse_glyph(glyph):
     glyph.transform(psMat.translate(0, before_top_y - after_top_y))
 
 
-def create_discord(eng_font):
+def create_discord(eng_font, jp_font, jp_style):
     """Discord用の調整を行う"""
     # Discord用の調整
     discord_char_list = "07DZlrz|"
@@ -511,6 +498,36 @@ def create_discord(eng_font):
     for glyph_name in [0x005E, 0x002A]:
         glyph = eng_font[glyph_name]
         scale_glyph(glyph, 1.15, 1.15)
+
+    # 日本語フォントにカスタムグリフを適用する
+    # - ぱぴぷぺぽ パピプペポ の半濁点を調整 30%拡大
+    # - カタカナ ヘペベ に特徴付け
+    # - カ力 エ工 ロ口 ー一 ニ二 のグリフに特徴付け
+    for uni in [
+        0x3071,
+        0x3074,
+        0x3077,
+        0x307A,
+        0x307D,
+        0x30D1,
+        0x30D4,
+        0x30D7,
+        0x30DA,
+        0x30DD,
+        0x30D8,
+        0x30D9,
+        0x529B,
+        0x5DE5,
+        0x53E3,
+        0x30FC,
+        0x4E00,
+        0x4E8C,
+    ]:
+        glyph = jp_font[uni]
+        glyph.clear()
+    jp_font.mergeFonts(
+        f"{SOURCE_FONTS_DIR}/biz-ud-gothic/custom_glyphs_discord-{jp_style}.sfd"
+    )
 
 
 def adjust_em(font):
