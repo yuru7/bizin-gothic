@@ -43,7 +43,7 @@ COPYRIGHT = """[Inconsolata]
 Copyright 2006 The Inconsolata Project Authors https://github.com/googlefonts/Inconsolata
 
 [BIZ UDGothic]
-Copyright 2022 The BIZ UDGothic Project Authors https://github.com/googlefonts/morisawa-biz-ud-mincho
+Copyright 2022 The BIZ UDGothic Project Authors https://github.com/googlefonts/morisawa-biz-ud-gothic
 
 [Nerd Fonts]
 Copyright (c) 2014, Ryan L McIntyre https://ryanlmcintyre.com
