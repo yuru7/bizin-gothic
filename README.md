@@ -46,7 +46,7 @@ BIZ UDゴシックの目に優しく馴染む字形と Inconsolata の癖がな�
 - fontforge: `20230101` \[[Windows](https://fontforge.org/en-US/downloads/windows/)\] \[[Linux](https://fontforge.org/en-US/downloads/gnulinux/)\]
 - Python: `>=3.8`
 
-### Windows (PowerShell)
+### Windows (PowerShell Core)
 
 ```sh
 # 必要パッケージのインストール
