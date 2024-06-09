@@ -44,7 +44,7 @@ BIZ UDゴシックの目に優しく馴染む字形と Inconsolata の癖がな�
 ## ビルド
 
 - fontforge: `20230101` \[[Windows](https://fontforge.org/en-US/downloads/windows/)\] \[[Linux](https://fontforge.org/en-US/downloads/gnulinux/)\]
-- Python: `>=3.8`
+- Python: `>=3.12`
 
 ### Windows (PowerShell Core)
 
@@ -52,7 +52,7 @@ BIZ UDゴシックの目に優しく馴染む字形と Inconsolata の癖がな�
 # 必要パッケージのインストール
 pip install -r requirements.txt
 # ビルド
-& "C:\Program Files (x86)\FontForgeBuilds\bin\ffpython.exe" .\fontforge_script.py && python .\fonttools_script.py
+& "C:\Program Files (x86)\FontForgeBuilds\bin\ffpython.exe" .\fontforge_script.py && python3 .\fonttools_script.py
 ```
 
 ## ライセンス
