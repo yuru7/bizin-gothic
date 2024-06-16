@@ -885,8 +885,8 @@ def add_nerd_font_glyphs(jp_font, eng_font):
                 elif nerd_glyph.width > half_width:
                     nerd_glyph.transform(psMat.scale(half_width / nerd_glyph.width, 1))
                 # グリフの高さ・位置を調整する
-                nerd_glyph.transform(psMat.scale(1, 1.21))
-                nerd_glyph.transform(psMat.translate(0, -24))
+                # nerd_glyph.transform(psMat.scale(1, 1.02))
+                nerd_glyph.transform(psMat.translate(0, 33))
             elif nerd_glyph.width < (EM_ASCENT + EM_DESCENT) * 0.6:
                 # 幅が狭いグリフは中央寄せとみなして調整する
                 nerd_glyph.transform(
