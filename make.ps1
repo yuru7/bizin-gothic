@@ -13,6 +13,8 @@ Remove-Item -Path .\build -Recurse -Force
 $option_and_output_folder = @(
     @("", "-"), # ビルド 通常版
     @("--discord", "Discord-") # ビルド Discord
+    @("--nerd-font", "NF-"), # ビルド 通常版 + Nerd Fonts
+    @("--discord --nerd-font", "DiscordNF-") # ビルド Discord + Nerd Fonts
 )
 
 $option_and_output_folder | Foreach-Object -ThrottleLimit 4 -Parallel {
@@ -23,6 +25,7 @@ $option_and_output_folder | Foreach-Object -ThrottleLimit 4 -Parallel {
 }
 
 $move_file_src_dest = @(
+    @("BizinGothic*NF-*.ttf", "BizinGothicNF_$version"),
     @("BizinGothicDiscord*-*.ttf", "BizinGothicDiscord_$version"),
     @("BizinGothic*-*.ttf", "BizinGothic_$version")
 )

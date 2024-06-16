@@ -107,8 +107,6 @@ def get_options():
             options["invisible-zenkaku-space"] = True
         elif arg == "--35":
             options["35"] = True
-        elif arg == "--console":
-            options["console"] = True
         elif arg == "--nerd-font":
             options["nerd-font"] = True
         elif arg == "--discord":
@@ -130,7 +128,7 @@ def generate_font(jp_style, eng_style, merged_style):
     adjust_em(eng_font)
 
     # 日本語文書に頻出する記号を英語フォントから削除する
-    if not options.get("console"):
+    if not options.get("nerd-font"):
         remove_jpdoc_symbols(eng_font)
 
     # いくつかのグリフ形状に調整を加える
@@ -158,8 +156,10 @@ def generate_font(jp_style, eng_style, merged_style):
     if not options.get("invisible-zenkaku-space"):
         visualize_zenkaku_space(jp_font)
 
-    # Nerd Fontのグリフを追加する
     if options.get("nerd-font"):
+        # East Asian Ambiguous Width のグリフを半角幅に縮小する
+        shrink_east_asian_ambiguous_width(jp_font)
+        # Nerd Fontのグリフを追加する
         add_nerd_font_glyphs(jp_font, eng_font)
 
     # オプション毎の修飾子を追加する
@@ -195,10 +195,10 @@ def generate_font(jp_style, eng_style, merged_style):
     # ヒンティングはあとで ttfautohint で行う。
     # flags=("no-hints", "omit-instructions") を使うとヒンティングだけでなく GPOS や GSUB も削除されてしまうので使わない
     eng_font.generate(
-        f"{BUILD_FONTS_DIR}/{FONTFORGE_PREFIX}{FONT_NAME}{variant}-{merged_style}-eng.ttf",
+        f"{BUILD_FONTS_DIR}/{FONTFORGE_PREFIX}{FONT_NAME}{variant.replace(' ', '')}-{merged_style}-eng.ttf",
     )
     jp_font.generate(
-        f"{BUILD_FONTS_DIR}/{FONTFORGE_PREFIX}{FONT_NAME}{variant}-{merged_style}-jp.ttf",
+        f"{BUILD_FONTS_DIR}/{FONTFORGE_PREFIX}{FONT_NAME}{variant.replace(' ', '')}-{merged_style}-jp.ttf",
     )
 
     # ttfを閉じる
@@ -350,14 +350,21 @@ def adjust_some_glyph(jp_font, jp_style, eng_font, eng_style):
 def scale_glyph(glyph, scale_x, scale_y):
     """グリフのスケールを調整する"""
     original_width = glyph.width
+    # スケール前の中心位置を求める
     before_bb = glyph.boundingBox()
+    before_center_x = (before_bb[0] + before_bb[2]) / 2
+    before_center_y = (before_bb[1] + before_bb[3]) / 2
     # スケール変換
     glyph.transform(psMat.scale(scale_x, scale_y))
+    # スケール後の中心位置を求める
     after_bb = glyph.boundingBox()
+    after_center_x = (after_bb[0] + after_bb[2]) / 2
+    after_center_y = (after_bb[1] + after_bb[3]) / 2
     # 拡大で増えた分を考慮して中心位置を調整
     glyph.transform(
         psMat.translate(
-            (before_bb[2] - after_bb[2]) / 2, (before_bb[3] - after_bb[3]) / 2
+            before_center_x - after_center_x,
+            before_center_y - after_center_y,
         )
     )
     glyph.width = original_width
@@ -579,6 +586,126 @@ def remove_lookups(font, remove_gsub=True, remove_gpos=True):
     if remove_gpos:
         for lookup in font.gpos_lookups:
             font.removeLookup(lookup)
+
+
+def shrink_east_asian_ambiguous_width(jp_font):
+    """East Asian Ambiguous Width のグリフを半角幅に縮小する"""
+    # ref: Unicode East Asian Ambiguous Width: https://www.unicode.org/Public/15.0.0/ucd/EastAsianWidth.txt
+
+    # 半分に縮小するグリフ
+    for uni in [
+        *range(
+            0x01CD, 0x01DC
+        ),  # LATIN CAPITAL LETTER A WITH CARON..LATIN CAPITAL LETTER U WITH DIAERESIS
+        *range(
+            0x0386, 0x03CF + 1
+        ),  # GREEK CAPITAL LETTER ALPHA WITH TONOS..GREEK SMALL LETTER OMEGA WITH DASIA
+        *range(
+            0x0401, 0x044F + 1
+        ),  # CYRILLIC CAPITAL LETTER IO..CYRILLIC SMALL LETTER YA
+        *range(
+            0x0451, 0x045F + 1
+        ),  # CYRILLIC SMALL LETTER IO..CYRILLIC SMALL LETTER DZHE
+        0x2025,  # TWO DOT LEADER
+        0x203B,  # REFERENCE MARK
+        0x2103,  # DEGREE CELSIUS
+        *range(0x2121, 0x2122 + 1),  # TELEPHONE SIGN..TRADE MARK SIGN
+        0x212B,  # ANGSTROM SIGN
+        *range(0x213A, 0x213B + 1),  # ROTATED CAPITAL Q..FACSIMILE SIGN
+        *range(0x2160, 0x216B + 1),  # ROMAN NUMERAL ONE..ROMAN NUMERAL TWELVE
+        *range(
+            0x2170, 0x217B + 1
+        ),  # SMALL ROMAN NUMERAL ONE..SMALL ROMAN NUMERAL TWELVE
+        0x2200,  # FOR ALL
+        *range(0x2202, 0x2203 + 1),  # PARTIAL DIFFERENTIAL..THERE EXISTS
+        *range(0x2207, 0x2208 + 1),  # NABLA..ELEMENT OF
+        0x220B,  # CONTAINS AS MEMBER
+        *range(0x221F, 0x2220 + 1),  # RIGHT ANGLE..ANGLE
+        *range(0x2225, 0x222C + 1),  # PARALLEL TO..DOUBLE INTEGRAL
+        0x222E,  # CONTOUR INTEGRAL
+        *range(0x2234, 0x2235 + 1),  # THEREFORE..BECAUSE
+        0x2252,  # APPROXIMATELY EQUAL TO OR THE IMAGE OF
+        0x2261,  # IDENTICAL TO
+        *range(
+            0x2266, 0x2267 + 1
+        ),  # LESS-THAN OVER EQUAL TO..GREATER-THAN OVER EQUAL TO
+        *range(0x226A, 0x226B + 1),  # MUCH LESS-THAN..MUCH GREATER-THAN
+        *range(0x2282, 0x2283 + 1),  # SUBSET OF..SUPERSET OF
+        *range(0x2286, 0x2287 + 1),  # SUBSET OF OR EQUAL TO..SUPERSET OF OR EQUAL TO
+        0x22A5,  # UP TACK
+        *range(0x2460, 0x24FF + 1),  # CIRCLED DIGIT ONE..NEGATIVE CIRCLED DIGIT TEN
+        *range(0x25A0, 0x25A1 + 1),  # BLACK SQUARE..WHITE SQUARE
+        *range(
+            0x25B2, 0x25B3 + 1
+        ),  # BLACK UP-POINTING TRIANGLE..WHITE UP-POINTING TRIANGLE
+        *range(
+            0x25BC, 0x25BD + 1
+        ),  # BLACK DOWN-POINTING TRIANGLE..WHITE DOWN-POINTING TRIANGLE
+        0x25CE,  # BULLSEYE
+        0x25EF,  # LARGE CIRCLE
+        *range(0x2605, 0x2606 + 1),  # BLACK STAR..WHITE STAR
+        0x260E,  # BLACK TELEPHONE
+        0x2640,  # FEMALE SIGN
+        0x2642,  # MALE SIGN
+        *range(0x2668, 0x266F + 1),  # HOT SPRINGS..MUSIC SHARP SIGN
+        0x2756,  # BLACK DIAMOND MINUS WHITE X
+        *range(
+            0x2776, 0x277F + 1
+        ),  # DINGBAT NEGATIVE CIRCLED DIGIT ONE..DINGBAT NEGATIVE CIRCLED NUMBER TEN
+        0x27A1,  # BLACK RIGHTWARDS ARROW
+        0x29BF,  # CIRCLED BULLET
+        0x1F100,  # DIGIT ZERO FULL STOP
+    ]:
+        try:
+            glyph = jp_font[uni]
+            if glyph.isWorthOutputting() and glyph.width == HALF_WIDTH_12 * 2:
+                before_width = glyph.width
+                scale_glyph(glyph, 0.6, 1)
+                glyph.transform(psMat.translate((HALF_WIDTH_12 - before_width) / 2, 0))
+                glyph.width = HALF_WIDTH_12
+        except Exception:
+            continue
+
+    # 半分の幅にしても収まるために幅を半分に位置調整だけするグリフ
+    for uni in [0x2016]:  # DOUBLE VERTICAL LINE
+        try:
+            glyph = jp_font[uni]
+            if glyph.isWorthOutputting() and glyph.width == HALF_WIDTH_12 * 2:
+                glyph.transform(psMat.translate((HALF_WIDTH_12 - glyph.width) / 2, 0))
+                glyph.width = HALF_WIDTH_12
+        except Exception:
+            continue
+
+    # 文字が潰れて見えなくなってしまうため、縮小なし、位置移動なしで幅だけ半角にするグリフ
+    for uni in [
+        *range(0x2600, 0x2603 + 1),  # BLACK SUN WITH RAYS..SNOWMAN
+        *range(
+            0x261C, 0x261F + 1
+        ),  # WHITE LEFT POINTING INDEX..WHITE DOWN POINTING INDEX
+    ]:
+        try:
+            glyph = jp_font[uni]
+            if glyph.isWorthOutputting() and glyph.width == HALF_WIDTH_12 * 2:
+                glyph.width = HALF_WIDTH_12
+        except Exception:
+            continue
+
+    # 半分の幅にしつつ、潰れないように縦には広げるグリフ
+    for uni in [
+        0x21D2,  # RIGHTWARDS DOUBLE ARROW
+        0x21D4,  # LEFT RIGHT DOUBLE ARROW
+        0x221D,  # PROPORTIONAL TO
+        0x223D,  # REVERSED TILDE
+    ]:
+        try:
+            glyph = jp_font[uni]
+            if glyph.isWorthOutputting() and glyph.width == HALF_WIDTH_12 * 2:
+                before_width = glyph.width
+                scale_glyph(glyph, 0.6, 1.25)
+                glyph.transform(psMat.translate((HALF_WIDTH_12 - before_width) / 2, 0))
+                glyph.width = HALF_WIDTH_12
+        except Exception:
+            continue
 
 
 def remove_jpdoc_symbols(eng_font):
